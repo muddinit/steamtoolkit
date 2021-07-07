@@ -13,3 +13,4 @@ You can save chart as image and export the data requested in JSON format.
 - Reorganize and separate code.<br/>
 - Add server browser(Already have it programmed, just need to adapt for this app and fix bugs).<br/>
 - Reduce size of releases.<br/>
+- Add table of games with percentage of completed achievements 
