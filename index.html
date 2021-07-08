@@ -31,8 +31,7 @@
             <input type="text" id="steamapikey" name="steamapikey"><br><br>
             <button onclick="table()" id="refreshbutton" type="button" class="btn btn-primary">Update</button>
             <button onclick="save()" id="savebutton" type="button" class="btn btn-primary">Save to JSON</button>
-            <button onclick="savesettings()" id="savesettings" type="button" class="btn btn-primary">Save current
-                SteamID and SteamAPI Key to Settings</button>
+            <button onclick="savesettings()" id="savesettings" type="button" class="btn btn-primary">Save currentSteamID and SteamAPI Key to Settings</button>
             <div style="height: 300px;" id="container"></div>
             <div class="align-items-end" id="log"></div>
         </div>
@@ -103,7 +102,7 @@
             let steamid = $("#steamid").val();
 
             const httpget = ratelimit(axios.create(), { maxRequests: 1, perMilliseconds: 1000, maxRPS: 1 });
-            let url = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" + steamapikey + "&steamid=" + steamid + "&include_played_free_games=1&format=json";
+            let url = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" + steamapikey + "&steamid=" + steamid + "&include_played_free_games=1&include_appinfo=1&format=json";
             async function getData(url) {
                 $("#container").css('height', '0px');
 
@@ -125,14 +124,15 @@
                             }
                         }
                         if (same == 0) {
-                            $(log).prepend("<br>" + timestamp() + " - Added from latestgames  " + gamedata.data.response.games[i].appid);
+                            $(log).prepend("<br>" + timestamp() + " - Added from latestgames  " + gamedata.data.response.games[i].name);
                             response.data.response.games.push(gamedata.data.response.games[i]);
                         } else { same = 0; }
                     }
 
 
                     for (let i in response.data.response.games) {
-                        $(log).prepend("<br>" + timestamp() + " - Getting achievement data for game : " + response.data.response.games[i].appid);
+					console.log( response.data.response.games[i]);
+                        $(log).prepend("<br>" + timestamp() + " - Getting achievement data for game : " + response.data.response.games[i].name);
                         url = "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=" + steamapikey + "&steamid=" + steamid + "&appid=" + response.data.response.games[i].appid;
 
                         await httpget.get(url, { timeout: 10000 }).then(async function (response) {
@@ -149,10 +149,10 @@
                                 console.log(error);
                                 //if success:true but actually there were no achivs
                                 if (typeof error.response == "undefined") {
-                                    $(log).prepend("<br>" + timestamp() + " - No achievements available for game : " + response.data.response.games[i].appid);
+                                    $(log).prepend("<br>" + timestamp() + " - No achievements available for game : " + response.data.response.games[i].name);
                                 }
                                 else if (error.response.status === 400) {
-                                    $(log).prepend("<br>" + timestamp() + " - No achievements available for game : " + response.data.response.games[i].appid);
+                                    $(log).prepend("<br>" + timestamp() + " - No achievements available for game : " + response.data.response.games[i].name);
                                 }
                                 else {
                                     $(log).prepend("<br>" + timestamp() + " - error : " + error.response.status);
