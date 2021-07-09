@@ -8,8 +8,8 @@
     <meta charset="UTF-8">
     <title>SteamToolkit</title>
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://code.highcharts.com/modules/exporting.js"></script>
+
 </head>
 
 <body>
@@ -31,25 +31,33 @@
             <input type="text" id="steamapikey" name="steamapikey"><br><br>
             <button onclick="table()" id="refreshbutton" type="button" class="btn btn-primary">Update</button>
             <button onclick="save()" id="savebutton" type="button" class="btn btn-primary">Save to JSON</button>
-            <button onclick="savesettings()" id="savesettings" type="button" class="btn btn-primary">Save currentSteamID and SteamAPI Key to Settings</button>
+            <button onclick="savesettings()" id="savesettings" type="button" class="btn btn-primary">Save currentSteamID
+                and SteamAPI Key to Settings</button>
+            <input name="r1" type="radio" value="Table"> Table
+            <input name="r1" type="radio" value="Chart"> Chart
             <div style="height: 300px;" id="container"></div>
-            <div class="align-items-end" id="log"></div>
+            <table id="servertable" class="display" style="width:75%">
+                <div class="align-items-end" id="log"></div>
         </div>
     </div>
 
     <script>
 
-
         let Buttonj = require('@material-ui/core/Button');
         let $ = require("jquery");
         let Highcharts = require('Highcharts');
         require('highcharts/modules/exporting')(Highcharts);
+        require('datatables.net-bs5')();
         let fs = require('fs');
         let axios = require('axios');
         let ratelimit = require('axios-rate-limit');
         let optionsdata = {};
         let time = [];
         let same = 0;
+        let achivnum = 0;
+        let datatable1;
+
+        $("input[name=r1][value='Chart']").prop("checked", true);
 
         $("#savebutton").prop('disabled', true);
 
@@ -95,7 +103,7 @@
                 $(log).prepend("<br>" + timestamp() + " No Steam Api key");
                 return false;
             }
-
+            let tabledata = [];
             disable(true);
 
             let steamapikey = $("#steamapikey").val();
@@ -131,7 +139,6 @@
 
 
                     for (let i in response.data.response.games) {
-					console.log( response.data.response.games[i]);
                         $(log).prepend("<br>" + timestamp() + " - Getting achievement data for game : " + response.data.response.games[i].name);
                         url = "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=" + steamapikey + "&steamid=" + steamid + "&appid=" + response.data.response.games[i].appid;
 
@@ -141,8 +148,14 @@
                                     //For some reason there is achieved achievements with 0 unlock time so we ignore them 
                                     if (i.unlocktime !== 0) {
                                         time.push(new Date(i.unlocktime * 1000).toLocaleDateString("en-US"));
+                                        achivnum++;
                                     }
+
                                 }
+                            }
+                            if (response.data.playerstats.achievements.length !== 0) {
+                                tabledata.push({ name: response.data.playerstats.gameName, achievement: achivnum + "/" + response.data.playerstats.achievements.length, percentage: (achivnum / response.data.playerstats.achievements.length).toLocaleString('en-GB', { style: 'percent' }) });
+                                achivnum = 0;
                             }
                         })
                             .catch((error) => {
@@ -187,70 +200,97 @@
                 return new Date(a[0]) - new Date(b[0]);
             }));
 
-            let options = {
-                chart: {
-                    title: "Achievements chart",
-                    backgroundColor: '#292b2c',
-                    renderTo: 'container',
-                    type: 'spline'
-                },
-                title: {
-                    style:
-                    {
-                        color: '#ffffff',
+            if ($('input[name="r1"]:checked').val() == "Chart") {
+
+                let options = {
+                    chart: {
+                        title: "Achievements chart",
+                        backgroundColor: '#292b2c',
+                        renderTo: 'container',
+                        type: 'spline'
                     },
-                    text: 'Achievements chart'
-                },
-                xAxis: {},
-                plotOptions: {
-                    spline: {
-                        marker: {
-                            enabled: false
+                    title: {
+                        style:
+                        {
+                            color: '#ffffff',
+                        },
+                        text: 'Achievements chart'
+                    },
+                    xAxis: {},
+                    plotOptions: {
+                        spline: {
+                            marker: {
+                                enabled: false
+                            }
                         }
+                    },
+                    series: [{
+                        type: 'spline',
+                        name: 'Achievements by day',
+                        lineColor: '#0000FF',
+                    }, {
+                        type: 'spline',
+                        name: 'Total achievements',
+                        lineColor: '#FF8000',
                     }
-                },
-                series: [{
-                    type: 'spline',
-                    name: 'Achievements by day',
-                    lineColor: '#0000FF',
-                }, {
-                    type: 'spline',
-                    name: 'Total achievements',
-                    lineColor: '#FF8000',
+                    ]
+                };
+
+                let categories = [],
+                    points = [],
+                    total = [0];
+                i = 0;
+                for (const [key, value] of Object.entries(time)) {
+
+                    categories.push(key);
+                    points.push(parseFloat(value));
+                    if (i == 0) { total[0] = value; } else {
+                        total.push(total[i - 1] + value);
+                    }
+                    i++;
                 }
-                ]
-            };
+                i = 0;
 
-            let categories = [],
-                points = [],
-                total = [0];
-            i = 0;
-            for (const [key, value] of Object.entries(time)) {
+                options.xAxis.categories = categories;
+                options.series[0].data = points;
+                options.series[1].data = total;
 
-                categories.push(key);
-                points.push(parseFloat(value));
-                if (i == 0) { total[0] = value; } else {
-                    total.push(total[i - 1] + value);
+                if ($.isEmptyObject(time) == false) {
+                    $(log).prepend("<br>" + timestamp() + " - Forming chart");
+                    let chart = new Highcharts.Chart(options);
+                    $("#container").css('height', '300px');
                 }
-                i++;
             }
-            i = 0;
+            //Table code
+            else {
+                if ($.fn.DataTable.isDataTable(datatable1)) {
+                    console.log("Trying to remove table...");
+                    $('#servertable').DataTable().clear().draw().destroy();
+                }
+                datatable1 = $('#servertable').DataTable(
+                    {
+                        responsive: true,
+                        destroy: true,
+                        "pageLength": tabledata.length + 1,
+                        data: tabledata,
+                        columns: [
+                            { title: "Name", data: "name" },
+                            { title: "Achievements", data: "achievement" },
+                            { title: "Completition Percentage", data: "percentage" }
+                        ]
+                    }
+                );
 
-            options.xAxis.categories = categories;
-            options.series[0].data = points;
-            options.series[1].data = total;
 
-            if ($.isEmptyObject(time) == false) {
-                $(log).prepend("<br>" + timestamp() + " - Forming chart");
-                let chart = new Highcharts.Chart(options);
-                $("#container").css('height', '300px');
+
             }
+
 
             disable(false);
         }
 
 
-        async function save() {
+        function save() {
 
             disable(true);
 
@@ -262,7 +302,7 @@
             disable(false);
         }
 
-        async function savesettings() {
+        function savesettings() {
 
             optionsdata.steamid = ($("#steamid").val());
             optionsdata.steamapikey = ($("#steamapikey").val());
