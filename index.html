@@ -48,6 +48,8 @@
         let Highcharts = require('Highcharts');
         require('highcharts/modules/exporting')(Highcharts);
         require('datatables.net-bs5')();
+        require('datatables.net-buttons-bs5')();
+        require('datatables.net-buttons/js/buttons.html5.js')();
         let fs = require('fs');
         let axios = require('axios');
         let ratelimit = require('axios-rate-limit');
@@ -269,6 +271,9 @@
                 }
                 datatable1 = $('#servertable').DataTable(
                     {
+                        dom: 'Bfrtip',
+                        buttons: [
+                            'copy', 'csv', 'excel', 'pdf'],
                         responsive: true,
                         destroy: true,
                         "pageLength": tabledata.length + 1,
