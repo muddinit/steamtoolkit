@@ -20,60 +20,62 @@
                     <a href="#" id="achievstats" class="sidebarbtn nav-link text-white">
                         Achievements Stats
                     </a>
-					<a href="#" id="serverbrowser" class="sidebarbtn nav-link text-white">
+                    <a href="#" id="serverbrowser" class="sidebarbtn nav-link text-white">
                         Server Browser
                     </a>
-					<a href="#" id="Exit" class="sidebarbtn nav-link text-white">
+                    <a href="#" id="Exit" class="sidebarbtn nav-link text-white">
                         Exit
                     </a>
                 </li>
             </ul>
         </div>
-		<div class="apppage" </div>
-    <script>
-	let $ = require('jquery');
-	let fs = require('fs');
-	let Buttonj = require('@material-ui/core/Button');
-    let Highcharts = require('Highcharts');
-    require('highcharts/modules/exporting')(Highcharts);
-    require('datatables.net-bs5')();
-    require('datatables.net-buttons-bs5')();
-    require('datatables.net-buttons/js/buttons.html5.js')();
-    let axios = require('axios');
-    let ratelimit = require('axios-rate-limit');
-    let optionsdata = {};
-    let time = [];
-    let same = 0;
-    let achivnum = 0;
-    let datatable1;
-	let jsongame = fs.readFileSync('ajax/games.json');
-	jsongame = JSON.parse(jsongame);
-	require('datatables.net-dt')();
-	let Gamedig = require('gamedig');
-	let table;
-	let SteamUser = require('steam-user');
-	
-	$('.sidebarbtn').click(function () {
-    switch ($(this).attr('id')) {
-        case 'achievstats':
-		$(".apppage").load( "ajax/achivstats.html", function( response, status, xhr ) {
-		if ( status == "error" ) {
-		alert("Error occured when loading: " + xhr.status + " " + xhr.statusText );
-		}})
-        break;
-        case 'serverbrowser':
-		$(".apppage").load( "ajax/serverbrowser.html", function( response, status, xhr ) {
-		if ( status == "error" ) {
-		alert("Error occured when loading: " + xhr.status + " " + xhr.statusText );
-		}})
-        break;
-             break;
-        case 'Exit':
-		window.close();
-             break;
-    }
-	});
-    </script>
+        <div class="apppage" </div>
+            <script>
+                let $ = require('jquery');
+                let fs = require('fs');
+                let Buttonj = require('@material-ui/core/Button');
+                let Highcharts = require('Highcharts');
+                require('highcharts/modules/exporting')(Highcharts);
+                require('datatables.net-bs5')();
+                require('datatables.net-buttons-bs5')();
+                require('datatables.net-buttons/js/buttons.html5.js')();
+                let axios = require('axios');
+                let ratelimit = require('axios-rate-limit');
+                let optionsdata = {};
+                let time = [];
+                let same = 0;
+                let achivnum = 0;
+                let datatable1;
+                let jsongame = fs.readFileSync('ajax/games.json');
+                jsongame = JSON.parse(jsongame);
+                require('datatables.net-dt')();
+                let Gamedig = require('gamedig');
+                let table;
+                let SteamUser = require('steam-user');
+
+                $('.sidebarbtn').click(function () {
+                    switch ($(this).attr('id')) {
+                        case 'achievstats':
+                            $(".apppage").load("ajax/achivstats.html", function (response, status, xhr) {
+                                if (status == "error") {
+                                    alert("Error occured when loading: " + xhr.status + " " + xhr.statusText);
+                                }
+                            })
+                            break;
+                        case 'serverbrowser':
+                            $(".apppage").load("ajax/serverbrowser.html", function (response, status, xhr) {
+                                if (status == "error") {
+                                    alert("Error occured when loading: " + xhr.status + " " + xhr.statusText);
+                                }
+                            })
+                            break;
+                            break;
+                        case 'Exit':
+                            window.close();
+                            break;
+                    }
+                });
+            </script>
 </body>
 
 </html>
