@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Steam Game Server Browser</title>
+	<link rel="stylesheet" type="text/css" href="jquery.dataTables.min.css">
+</head>
+
+
+
+<body>
+	<button class="tablink" onclick="openPage('refreshbutton', this, 'choosegame')">Servers</button>
+	<button class="tablink" onclick="openPage('Home', this, 'red')">Favorites</button>
+	<button onclick="testfunction()" id = "refreshbutton" type="button">Update</button>
+	<select class ="game" id = "choosegame">
+	<option value="225840">Sven Coop</option>
+	<option value="440">Team Fortress 2</option>
+	<option value="20">Team Fortress Classic</option>
+	<option value="70">	Half-Life Deathmatch</option>
+	<option value="360">Half-Life Deathmatch: Source</option>
+	<option value="50">Half-Life: Opposing Force</option>
+	</select>
+	<table id="servertable" class="display" style="width:75%">
+	</table>
+
+	<script>
+	
+		function testfunction() {
+		
+		let players = 0;
+		let maxplayers = 0;
+		let client = new SteamUser();
+
+		client.logOn();
+		client.on('loggedOn', async (details) => {
+			console.log("Logged onto Steam as " + client.steamID.steam3())
+			console.log("Requesting serverinfo...")
+			let result = await client.getServerList('\\appid\\' + $("select.game :selected").val(), 20000, []);
+			console.log("Got data, processing...");
+			for (let i = 0; i < result.servers.length; i++) {
+				players = players + result.servers[i].players; maxplayers = maxplayers + result.servers[i].max_players;
+			}
+			console.log($.fn.DataTable.isDataTable(table));
+			
+			//let check =  document.getElementById("#servertable")
+			if ( $.fn.DataTable.isDataTable(table) ) {
+				console.log("Trying to remove table...");
+				$('#servertable').DataTable().clear().draw().destroy();
+				}
+				
+			table = $('#servertable').DataTable(
+				{
+					responsive: true,
+					destroy: true,
+					"pageLength": result.servers.length + 1,
+					data: result.servers,
+					columns: [
+						{ title: "Server Name", data: "name" },
+						{ title: "Game Version", data: "version" },
+						{ title: "Current Players", data: "players" },
+						{ title: "Max Players", data: "max_players" },
+						{ title: "Map", data: "map" },
+						{ title: "VAC Secure", data: "secure" },
+						{ title: "Server IP", data: "addr" },
+						{ title: "Ping", defaultContent: "<button>Click!</button>" },
+					]
+				}
+			);
+			console.log(players + "/" + maxplayers)
+			console.log(result)
+		});
+
+		$('#servertable').on('click', 'button', function () {
+			let data = table.row($(this).parents('tr')).data();
+			//Actual ping and get player info using gamequery, we read type from json file
+			
+			Gamedig.query({
+				type: jsongame[$("select.game :selected").val()],
+				host: data["addr"].substring(0, data["addr"].length - 6),
+				port: data["addr"].substring(data["addr"].length - 5)
+			}).then((state) => {
+			
+			//TODO: Add ping as actual text and change button, also we can update current players using gamedig updated data
+				console.log(state);
+				console.log(data["addr"]);
+				$(this).text(state.ping);
+				let row = table.row($(this).parents('tr'))
+				// We make table of players if user clicks on button
+				let childtable = $('<table class="display" width="50%"/>');
+				row.child(childtable).show();
+				let userstable = childtable.DataTable({
+					destroy: true,
+					searching: false,
+					info: false,
+					data: state.players,
+					bLengthChange : false,
+					bPaginate: false,
+					pageLength: state.players.length + 1,
+					columns: [
+						{ title: "Player Name", data: "name"},
+						{ title: "Score", data: "score"},
+						{ title: "Time", data: "time"}
+					]
+				});
+			}).catch((error) => {
+				console.log("Failed request IP of server : " + data["addr"]);
+				console.log(error);
+			});
+		});
+		}
+		
+
+
+	</script>
+</body>
+
+</html>
