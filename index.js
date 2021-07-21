@@ -13,6 +13,7 @@ function createWindow () {
 
   // and load the index.html of the app.
   win.removeMenu()
+  win.maximize()
   win.loadFile('index.html')
 }
 
