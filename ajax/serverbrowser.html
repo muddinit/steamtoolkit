@@ -89,8 +89,8 @@
 					pageLength: state.players.length + 1,
 					columns: [
 						{ title: "Player Name", data: "name"},
-						{ title: "Score", data: "score"},
-						{ title: "Time", data: "time"}
+						{ title: "Score", data: "raw.score"},
+						{ title: "Time", data: "raw.time"}
 					]
 				});
 			}).catch((error) => {
