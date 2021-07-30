@@ -5,297 +5,293 @@
 
 
 <head>
-	<meta charset="UTF-8">
-	<link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
-	<script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
 
 </head>
 
 <body>
-	<div class="col p-0">
-		<label for="steamid">Steam64 ID:</label>
-		<input type="text" id="steamid" name="steamid"><br><br>
-		<label for="steapikey">Steam Api Key:</label>
-		<input type="text" id="steamapikey" name="steamapikey"><br><br>
-		<button onclick="achivtable()" id="refreshbutton" type="button" class="btn btn-primary">Update</button>
-		<button onclick="save()" id="savebutton" type="button" class="btn btn-primary">Save to JSON</button>
-		<button onclick="savesettings()" id="savesettings" type="button" class="btn btn-primary">Save current SteamID
-			and SteamAPI Key to Settings</button>
-		<input name="r1" type="radio" value="Table"> Table
-		<input name="r1" type="radio" value="Chart"> Chart
-		<div style="height: 300px;" id="container"></div>
-		<table id="servertable" class="display" style="width:75%">
-			<div class="align-items-end" id="log"></div>
-	</div>
-	</div>
+    <div class="col p-0">
+        <label for="steamid">Steam64 ID:</label>
+        <input type="text" id="steamid" name="steamid"><br><br>
+        <label for="steapikey">Steam Api Key:</label>
+        <input type="text" id="steamapikey" name="steamapikey"><br><br>
+        <button onclick="achivtable()" id="refreshbutton" type="button" class="btn btn-primary">Update</button>
+        <button onclick="save()" id="savebutton" type="button" class="btn btn-primary">Save to JSON</button>
+        <button onclick="savesettings()" id="savesettings" type="button" class="btn btn-primary">Save current SteamID
+            and SteamAPI Key to Settings</button>
+        <input name="r1" type="radio" value="Table"> Table
+        <input name="r1" type="radio" value="Chart"> Chart
+        <div style="height: 300px;" id="container"></div>
+        <table id="servertable" class="display" style="width:75%">
+            <div class="align-items-end" id="log"></div>
+    </div>
+    </div>
 
-	<script>
+    <script>
 
-		$("input[name=r1][value='Chart']").prop("checked", true);
+        $("input[name=r1][value='Chart']").prop("checked", true);
 
-		$("#savebutton").prop('disabled', true);
+        $("#savebutton").prop('disabled', true);
 
-		fs.readFile(__dirname + "/options.json", "utf8", function (err, data) {
-			if (err) { $(log).prepend("<br>" + timestamp() + "error: " + err); }
-			data = JSON.parse(data);
-			$('#steamapikey').val(data.steamapikey);
-			$('#steamid').val(data.steamid);
-		});
+        fs.readFile(__dirname + "/options.json", "utf8", function (err, data) {
+            if (err) { $(log).prepend("<br>" + timestamp() + "error: " + err); }
+            data = JSON.parse(data);
+            $('#steamapikey').val(data.steamapikey);
+            $('#steamid').val(data.steamid);
+        });
 
-		function disable(x) {
-			if (x == true) {
-				$("#refreshbutton").prop('disabled', true);
-				$("#steamapikey").prop('disabled', true);
-				$("#savebutton").prop('disabled', true);
-				$("#steamid").prop('disabled', true);
-			}
-			else {
-				$("#refreshbutton").prop('disabled', false);
-				$("#steamapikey").prop('disabled', false);
-				$("#savebutton").prop('disabled', false);
-				$("#steamid").prop('disabled', false);
-			}
-			if ($.isEmptyObject(time) == true) { $("#savebutton").prop('disabled', true); }
-		}
+        function disable(x) {
+            if (x == true) {
+                $("#refreshbutton").prop('disabled', true);
+                $("#steamapikey").prop('disabled', true);
+                $("#savebutton").prop('disabled', true);
+                $("#steamid").prop('disabled', true);
+            }
+            else {
+                $("#refreshbutton").prop('disabled', false);
+                $("#steamapikey").prop('disabled', false);
+                $("#savebutton").prop('disabled', false);
+                $("#steamid").prop('disabled', false);
+            }
+            if ($.isEmptyObject(time) == true) { $("#savebutton").prop('disabled', true); }
+        }
 
-		function timestamp() {
-			let x = new Date();
-			return x.getHours() + ":" + x.getMinutes() + ":" + x.getSeconds();
-		}
+        function timestamp() {
+            let x = new Date();
+            return x.getHours() + ":" + x.getMinutes() + ":" + x.getSeconds();
+        }
 
-		async function achivtable() {
-			$(log).empty();
-			time = [];
-			if ($("#steamid").val() == "") {
-				$(log).prepend("<br>" + timestamp() + " No Steam ID");
-				return false;
-			} else if ($("#steamapikey").val() == "") {
-				$(log).prepend("<br>" + timestamp() + " No Steam Api key");
-				return false;
-			}
-			let tabledata = [];
-			disable(true);
+        async function achivtable() {
+            $(log).empty();
+            time = [];
+            if ($("#steamid").val() == "") {
+                $(log).prepend("<br>" + timestamp() + " No Steam ID");
+                return false;
+            } else if ($("#steamapikey").val() == "") {
+                $(log).prepend("<br>" + timestamp() + " No Steam Api key");
+                return false;
+            }
+            let tabledata = [];
+            disable(true);
 
-			let steamapikey = $("#steamapikey").val();
-			let steamid = $("#steamid").val();
+            let steamapikey = $("#steamapikey").val();
+            let steamid = $("#steamid").val();
 
-			const httpget = ratelimit(axios.create(), { maxRequests: 1, perMilliseconds: 1000, maxRPS: 1 });
-			let url = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" + steamapikey + "&steamid=" + steamid + "&include_played_free_games=1&include_appinfo=1&format=json";
-			async function getData(url) {
-				$("#container").css('height', '0px');
+            const httpget = ratelimit(axios.create(), { maxRequests: 1, perMilliseconds: 1000, maxRPS: 1 });
+            let url = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" + steamapikey + "&steamid=" + steamid + "&include_played_free_games=1&include_appinfo=1&format=json";
+            async function getData(url) {
+                $("#container").css('height', '0px');
 
-				await httpget.get(url).then(async function (response) {
-					if (Object.keys(response.data.response).length == 0) {
-						$(log).prepend("<br>" + timestamp() + " - Can't get owned games data. Profile most likely private or friends only");
-						return false;
-					}
-					$(log).prepend("<br>" + timestamp() + " - Total number of games according to Steam API = " + response.data.response.games.length);
-					url = "http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=" + steamapikey + "&steamid=" + steamid + "&format=json";
+                await httpget.get(url).then(async function (response) {
+                    if (Object.keys(response.data.response).length == 0) {
+                        $(log).prepend("<br>" + timestamp() + " - Can't get owned games data. Profile most likely private or friends only");
+                        return false;
+                    }
+                    $(log).prepend("<br>" + timestamp() + " - Total number of games according to Steam API = " + response.data.response.games.length);
+                    url = "http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=" + steamapikey + "&steamid=" + steamid + "&format=json";
 
-					let gamedata = await httpget.get(url);
-					$(log).prepend("<br>" + timestamp() + " - Checking recent played games");
-					for (let i in gamedata.data.response.games) {
-						for (let x in response.data.response.games) {
-							if (response.data.response.games[x].appid == gamedata.data.response.games[i].appid) {
-								same = 1;
-								break;
-							}
-						}
-						if (same == 0) {
-							$(log).prepend("<br>" + timestamp() + " - Added from latestgames  " + gamedata.data.response.games[i].name);
-							response.data.response.games.push(gamedata.data.response.games[i]);
-						} else { same = 0; }
-					}
-
-
-					for (let i in response.data.response.games) {
-						$(log).prepend("<br>" + timestamp() + " - Getting achievement data for game : " + response.data.response.games[i].name);
-						url = "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=" + steamapikey + "&steamid=" + steamid + "&appid=" + response.data.response.games[i].appid;
-
-						await httpget.get(url, { timeout: 10000 }).then(async function (response) {
-							for (let i of response.data.playerstats.achievements) {
-								if (i.achieved == 1) {
-									//For some reason there is achieved achievements with 0 unlock time so we ignore them 
-									if (i.unlocktime !== 0) {
-										time.push(new Date(i.unlocktime * 1000).toLocaleDateString("en-US"));
-										achivnum++;
-									}
-
-								}
-							}
-							if (response.data.playerstats.achievements.length !== 0) {
-								tabledata.push({ name: response.data.playerstats.gameName, achievement: achivnum + "/" + response.data.playerstats.achievements.length, percentage: (achivnum / response.data.playerstats.achievements.length).toLocaleString('en-GB', { style: 'percent' }) });
-								achivnum = 0;
-							}
-						})
-							.catch((error) => {
-								console.log(error);
-								//if success:true but actually there were no achivs
-								if (typeof error.response == "undefined") {
-									$(log).prepend("<br>" + timestamp() + " - No achievements available for game : " + response.data.response.games[i].name);
-								}
-								else if (error.response.status === 400) {
-									$(log).prepend("<br>" + timestamp() + " - No achievements available for game : " + response.data.response.games[i].name);
-								}
-								else {
-									$(log).prepend("<br>" + timestamp() + " - error : " + error.response.status);
-									disable(false);
-								}
-
-							});
-					}
-
-					return time;
-
-				}).catch((error) => {
-					console.log(error);
-					if (error.response.status == 500) { $(log).prepend("<br>" + timestamp() + " - error(" + error.response.status + ") - Most likely SteamID is wrong"); }
-					if (error.response.status == 401) { $(log).prepend("<br>" + timestamp() + " - error(" + error.response.status + ") - Most likely SteamAPIKey is wrong"); }
-					$(log).prepend("<br>" + timestamp() + " - error : " + error.response.status);
-					disable(false);
-				});
-			}
-
-			if (await getData(url) == false) {
-				disable(false);
-				return false;
-			}
-
-			time = time.reduce(function (p, c) {
-				p[c] = (p[c] || 0) + 1;
-				return p;
-			}, {});
-
-			time = Object.fromEntries(Object.entries(time).sort(function (a, b) {
-				return new Date(a[0]) - new Date(b[0]);
-			}));
-
-			if ($('input[name="r1"]:checked').val() == "Chart") {
-
-				let options = {
-
-					chart: {
-						title: "Achievements chart",
-						backgroundColor: '#292b2c',
-						renderTo: 'container',
-						height: "300",
-						type: 'spline'
-					},
-
-					title: {
-						style:
-						{
-							color: '#ffffff',
-						},
-						text: 'Achievements chart'
-					},
-					xAxis: {},
-					plotOptions: {
-						spline: {
-							marker: {
-								enabled: false
-							}
-						}
-					},
-					legend: {
-						itemStyle: {
-							color: 'white',
-							fontWeight: 'bold'
-						}
-					},
-					series: [{
-						type: 'spline',
-						name: 'Achievements by day',
-						lineColor: '#0000FF',
-					}, {
-						type: 'spline',
-						name: 'Total achievements',
-						lineColor: '#FF8000',
-					}
-					]
-
-				};
-
-				let categories = [],
-					points = [],
-					total = [0];
-				i = 0;
-				for (const [key, value] of Object.entries(time)) {
-
-					categories.push(key);
-					points.push(parseFloat(value));
-					if (i == 0) { total[0] = value; } else {
-						total.push(total[i - 1] + value);
-					}
-					i++;
-				}
-				i = 0;
-
-				options.xAxis.categories = categories;
-				options.series[0].data = points;
-				options.series[1].data = total;
-
-				if ($.isEmptyObject(time) == false) {
-					$(log).prepend("<br>" + timestamp() + " - Forming chart");
-					let chart = new Highcharts.Chart(options);
-					$("#container").css('height', '300px');
-				}
-			}
-			//Table code
-			else {
-				if ($.fn.DataTable.isDataTable(datatable1)) {
-					console.log("Trying to remove table...");
-					$('#servertable').DataTable().clear().draw().destroy();
-				}
-				datatable1 = $('#servertable').DataTable(
-					{
-						dom: 'Bfrtip',
-						buttons: [
-							'copy', 'csv', 'excel', 'pdf'],
-						responsive: true,
-						destroy: true,
-						"pageLength": tabledata.length + 1,
-						data: tabledata,
-						columns: [
-							{ title: "Name", data: "name" },
-							{ title: "Achievements", data: "achievement" },
-							{ title: "Completition Percentage", data: "percentage" }
-						]
-					}
-				);
+                    let gamedata = await httpget.get(url);
+                    $(log).prepend("<br>" + timestamp() + " - Checking recent played games");
+                    for (let i in gamedata.data.response.games) {
+                        for (let x in response.data.response.games) {
+                            if (response.data.response.games[x].appid == gamedata.data.response.games[i].appid) {
+                                same = 1;
+                                break;
+                            }
+                        }
+                        if (same == 0) {
+                            $(log).prepend("<br>" + timestamp() + " - Added from latestgames  " + gamedata.data.response.games[i].name);
+                            response.data.response.games.push(gamedata.data.response.games[i]);
+                        } else { same = 0; }
+                    }
 
 
+                    for (let i in response.data.response.games) {
+                        $(log).prepend("<br>" + timestamp() + " - Getting achievement data for game : " + response.data.response.games[i].name);
+                        url = "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=" + steamapikey + "&steamid=" + steamid + "&appid=" + response.data.response.games[i].appid;
 
-			}
+                        await httpget.get(url, { timeout: 10000 }).then(async function (response) {
+                            for (let i of response.data.playerstats.achievements) {
+                                if (i.achieved == 1) {
+                                    //For some reason there is achieved achievements with 0 unlock time so we ignore them 
+                                    if (i.unlocktime !== 0) {
+                                        time.push(new Date(i.unlocktime * 1000).toLocaleDateString("en-US"));
+                                        achivnum++;
+                                    }
 
+                                }
+                            }
+                            if (response.data.playerstats.achievements.length !== 0) {
+                                tabledata.push({ name: response.data.playerstats.gameName, achievement: achivnum + "/" + response.data.playerstats.achievements.length, percentage: (achivnum / response.data.playerstats.achievements.length).toLocaleString('en-GB', { style: 'percent' }) });
+                                achivnum = 0;
+                            }
+                        })
+                            .catch((error) => {
+                                console.log(error);
+                                //if success:true but actually there were no achivs
+                                if (typeof error.response == "undefined") {
+                                    $(log).prepend("<br>" + timestamp() + " - No achievements available for game : " + response.data.response.games[i].name);
+                                }
+                                else if (error.response.status === 400) {
+                                    $(log).prepend("<br>" + timestamp() + " - No achievements available for game : " + response.data.response.games[i].name);
+                                }
+                                else {
+                                    $(log).prepend("<br>" + timestamp() + " - error : " + error.response.status);
+                                    disable(false);
+                                }
 
-			disable(false);
-		}
+                            });
+                    }
 
+                    return time;
 
-		function save() {
+                }).catch((error) => {
+                    console.log(error);
+                    if (error.response.status == 500) { $(log).prepend("<br>" + timestamp() + " - error(" + error.response.status + ") - Most likely SteamID is wrong"); }
+                    if (error.response.status == 401) { $(log).prepend("<br>" + timestamp() + " - error(" + error.response.status + ") - Most likely SteamAPIKey is wrong"); }
+                    $(log).prepend("<br>" + timestamp() + " - error : " + error.response.status);
+                    disable(false);
+                });
+            }
 
-			disable(true);
+            if (await getData(url) == false) {
+                disable(false);
+                return false;
+            }
 
-			fs.writeFile(`${$(steamid).val()}.json`, JSON.stringify(time), function (err, obj) {
-				if (err) { $(log).prepend("<br>" + timestamp() + "error writing file: " + err); }
-				$(log).prepend("<br>" + timestamp() + " - Done writing to file");
-			});
+            time = time.reduce(function (p, c) {
+                p[c] = (p[c] || 0) + 1;
+                return p;
+            }, {});
 
-			disable(false);
-		}
+            time = Object.fromEntries(Object.entries(time).sort(function (a, b) {
+                return new Date(a[0]) - new Date(b[0]);
+            }));
 
-		function savesettings() {
+            if ($('input[name="r1"]:checked').val() == "Chart") {
 
-			optionsdata.steamid = ($("#steamid").val());
-			optionsdata.steamapikey = ($("#steamapikey").val());
+                let options = {
 
-			fs.writeFile(__dirname + "/options.json", JSON.stringify(optionsdata), function (err, obj) {
-				if (err) { $(log).prepend("<br>" + timestamp() + "error writing file: " + err); }
-				$(log).prepend("<br>" + timestamp() + " - Done writing to file");
-			});
-		}
-	</script>
+                    chart: {
+                        title: "Achievements chart",
+                        backgroundColor: '#292b2c',
+                        renderTo: 'container',
+                        height: "300",
+                        type: 'spline'
+                    },
+
+                    title: {
+                        style:
+                        {
+                            color: '#ffffff',
+                        },
+                        text: 'Achievements chart'
+                    },
+                    xAxis: {},
+                    plotOptions: {
+                        spline: {
+                            marker: {
+                                enabled: false
+                            }
+                        }
+                    },
+                    legend: {
+                        itemStyle: {
+                            color: 'white',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    series: [{
+                        type: 'spline',
+                        name: 'Achievements by day',
+                        lineColor: '#0000FF',
+                    }, {
+                        type: 'spline',
+                        name: 'Total achievements',
+                        lineColor: '#FF8000',
+                    }
+                    ]
+
+                };
+
+                let categories = [],
+                    points = [],
+                    total = [0];
+                i = 0;
+                for (const [key, value] of Object.entries(time)) {
+
+                    categories.push(key);
+                    points.push(parseFloat(value));
+                    if (i == 0) { total[0] = value; } else {
+                        total.push(total[i - 1] + value);
+                    }
+                    i++;
+                }
+                i = 0;
+
+                options.xAxis.categories = categories;
+                options.series[0].data = points;
+                options.series[1].data = total;
+
+                if ($.isEmptyObject(time) == false) {
+                    $(log).prepend("<br>" + timestamp() + " - Forming chart");
+                    let chart = new Highcharts.Chart(options);
+                    $("#container").css('height', '300px');
+                }
+            }
+            //Table code
+            else {
+                if ($.fn.DataTable.isDataTable(datatable1)) {
+                    console.log("Trying to remove table...");
+                    $('#servertable').DataTable().clear().draw().destroy();
+                }
+                datatable1 = $('#servertable').DataTable(
+                    {
+                        dom: 'Bfrtip',
+                        buttons: [
+                            { extend: 'copy' },
+                            {
+                                extend: 'csv',
+                                title: 'export'
+                            },
+                        ],
+                        responsive: true,
+                        destroy: true,
+                        "paging": false,
+                        "info": false,
+                        "pageLength": tabledata.length + 1,
+                        data: tabledata,
+                        columns: [
+                            { title: "Name", data: "name" },
+                            { title: "Achievements", data: "achievement" },
+                            { title: "Completition Percentage", data: "percentage" }
+                        ]
+                    }
+                );
+            }
+            disable(false);
+        }
+
+        function save() {
+            disable(true);
+            fs.writeFile(`${$(steamid).val()}.json`, JSON.stringify(time), function (err, obj) {
+                if (err) { $(log).prepend("<br>" + timestamp() + "error writing file: " + err); }
+                $(log).prepend("<br>" + timestamp() + " - Done writing to file");
+            });
+            disable(false);
+        }
+
+        function savesettings() {
+            optionsdata.steamid = ($("#steamid").val());
+            optionsdata.steamapikey = ($("#steamapikey").val());
+            fs.writeFile(__dirname + "/options.json", JSON.stringify(optionsdata), function (err, obj) {
+                if (err) { $(log).prepend("<br>" + timestamp() + "error writing file: " + err); }
+                $(log).prepend("<br>" + timestamp() + " - Done writing to file");
+            });
+        }
+    </script>
 </body>
 
 </html>
